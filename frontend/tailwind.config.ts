@@ -71,6 +71,10 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-12px)" },
         },
+        "progress": {
+          "from": { width: "0%" },
+          "to": { width: "100%" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s ease-out forwards",

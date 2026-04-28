@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GitPullRequest,
@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const AUTO_ADVANCE_MS = 6000;
+
 const TABS = [
   {
     id: "pr",
@@ -19,6 +21,7 @@ const TABS = [
     desc: "A single, well-formatted comment on every PR — summary, severity-tagged findings, file:line refs, and concrete fix suggestions.",
     image: "/screenshots/pr-comment.png",
     url: "github.com/your-org/repo/pull/12",
+    aspect: 1920 / 900,
   },
   {
     id: "check",
@@ -27,6 +30,7 @@ const TABS = [
     desc: "Codexa posts a real GitHub status check. Add it to branch protection to block merges with critical issues.",
     image: "/screenshots/github-check.png",
     url: "github.com/your-org/repo/pull/12/checks",
+    aspect: 1920 / 900,
   },
   {
     id: "settings",
@@ -35,6 +39,7 @@ const TABS = [
     desc: "Tune Codexa for each repo — skip lockfiles, set a severity threshold, and add custom guidance the AI must follow.",
     image: "/screenshots/repo-settings.png",
     url: "codexa.dev/dashboard/settings/repos/...",
+    aspect: 1906 / 1491,
   },
   {
     id: "detail",
@@ -43,12 +48,27 @@ const TABS = [
     desc: "Click any review to drill into the full breakdown — every finding with file, line, message, and AI-suggested fix.",
     image: "/screenshots/review-detail.png",
     url: "codexa.dev/dashboard/reviews/...",
+    aspect: 1920 / 900,
   },
 ] as const;
 
+type TabId = (typeof TABS)[number]["id"];
+
 export function Showcase() {
-  const [active, setActive] = useState<(typeof TABS)[number]["id"]>(TABS[0].id);
+  const [active, setActive] = useState<TabId>(TABS[0].id);
+  const [paused, setPaused] = useState(false);
   const current = TABS.find((t) => t.id === active)!;
+
+  // Auto-advance carousel — pauses on hover, resets on manual click
+  useEffect(() => {
+    if (paused) return;
+    const timer = setTimeout(() => {
+      const i = TABS.findIndex((t) => t.id === active);
+      const next = TABS[(i + 1) % TABS.length].id;
+      setActive(next);
+    }, AUTO_ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, [active, paused]);
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -97,20 +117,26 @@ export function Showcase() {
         </div>
 
         {/* Browser chrome + image */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7, delay: 0.1 }}
+        <div
           className="relative"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
         >
           {/* Glow halo */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7 }}
             aria-hidden
             className="absolute -inset-4 bg-gradient-to-r from-violet-500/30 via-blue-500/30 to-violet-500/30 blur-3xl rounded-3xl opacity-50"
           />
 
-          <div className="relative rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <motion.div
+            layout
+            transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
+            className="relative rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden"
+          >
             {/* macOS-style browser chrome */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card/80">
               <div className="flex gap-1.5">
@@ -118,18 +144,42 @@ export function Showcase() {
                 <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
                 <span className="h-3 w-3 rounded-full bg-green-500/80" />
               </div>
-              <div
-                key={current.url}
-                className="flex-1 max-w-md mx-auto px-3 py-1 rounded-md bg-background/60 border border-border/40 text-xs text-muted-foreground font-mono text-center truncate animate-fade-up"
-                style={{ animationDuration: "300ms" }}
-              >
-                {current.url}
-              </div>
-              <div className="w-12" /> {/* spacer for symmetry */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={current.url}
+                  initial={{ opacity: 0, y: -2 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 2 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 max-w-md mx-auto px-3 py-1 rounded-md bg-background/60 border border-border/40 text-xs text-muted-foreground font-mono text-center truncate"
+                >
+                  {current.url}
+                </motion.div>
+              </AnimatePresence>
+              <div className="w-12" />
             </div>
 
-            {/* Screenshot — fades between tabs */}
-            <div className="relative aspect-[1920/900] bg-background/40">
+            {/* Auto-advance progress bar */}
+            <div className="relative h-[2px] bg-border/30 overflow-hidden">
+              <div
+                key={`progress-${active}-${paused}`}
+                className={cn(
+                  "absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-blue-500",
+                  paused ? "" : "animate-[progress_6000ms_linear_forwards]",
+                )}
+                style={{
+                  animationPlayState: paused ? "paused" : "running",
+                }}
+              />
+            </div>
+
+            {/* Screenshot — frame size animates between tabs via layout */}
+            <motion.div
+              layout
+              transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
+              className="relative bg-background/40"
+              style={{ aspectRatio: current.aspect }}
+            >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={active}
@@ -149,9 +199,9 @@ export function Showcase() {
                   />
                 </motion.div>
               </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
 
         {/* Description fades between tabs */}
         <div className="mt-8 max-w-2xl mx-auto h-12 relative">
