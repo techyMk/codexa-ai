@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="frontend/assets/codex-logo.svg" alt="Codexa" width="320" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/assets/codex-logo.svg">
+  <img alt="Codexa" src="frontend/assets/codex-logo-dark.svg" width="320">
+</picture>
 
 ### AI code review on every GitHub pull request
 
