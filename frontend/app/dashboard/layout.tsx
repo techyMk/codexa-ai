@@ -18,8 +18,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border/40 bg-card/20 backdrop-blur-xl hidden md:flex flex-col">
+      {/* Sidebar — sticks to viewport so nav is always reachable */}
+      <aside className="w-64 flex-shrink-0 border-r border-border/40 bg-card/20 backdrop-blur-xl hidden md:flex flex-col sticky top-0 h-screen self-start">
         <div className="px-6 py-5">
           <Link href="/" className="flex items-center" aria-label="Codexa home">
             <Logo width={150} priority />
