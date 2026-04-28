@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
 from app.core.logging import get_logger
 from app.core.security import verify_webhook_signature
+from app.db.supabase import insert_pending_review
 from app.services.reviewer import review_pr
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -40,18 +41,32 @@ async def github_webhook(
     repo_full = (payload.get("repository") or {}).get("full_name")
     installation_id = (payload.get("installation") or {}).get("id")
     pr_number = pr.get("number")
+    head_sha = (pr.get("head") or {}).get("sha")
+    pr_url = pr.get("html_url")
+    pr_title = pr.get("title", "")
 
     if not (repo_full and installation_id and pr_number):
         log.warning("webhook_missing_fields", payload_keys=list(payload.keys()))
         raise HTTPException(status_code=400, detail="missing required fields")
 
+    # Insert a pending row immediately so the dashboard shows activity right away.
+    review_id = insert_pending_review(
+        repo=repo_full,
+        pr_number=pr_number,
+        installation_id=installation_id,
+        pr_title=pr_title,
+        pr_url=pr_url,
+    )
+
     background.add_task(
         review_pr,
+        review_id=review_id,
         installation_id=installation_id,
         repo=repo_full,
         pr_number=pr_number,
-        title=pr.get("title", ""),
+        title=pr_title,
         body=pr.get("body") or "",
+        head_sha=head_sha,
     )
 
-    return {"ok": True, "queued": True}
+    return {"ok": True, "queued": True, "review_id": review_id}

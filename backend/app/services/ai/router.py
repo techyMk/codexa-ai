@@ -32,12 +32,21 @@ class AIRouter:
                 "No AI providers configured. Set GEMINI_API_KEY or GROQ_API_KEY."
             )
 
-    async def review(self, *, title: str, body: str, diff: str) -> ReviewResult:
+    async def review(
+        self,
+        *,
+        title: str,
+        body: str,
+        diff: str,
+        extra_prompt: str = "",
+    ) -> ReviewResult:
         last_error: Exception | None = None
         for provider in self._providers:
             try:
                 log.info("ai_review_attempt", provider=provider.name)
-                return await provider.review(title=title, body=body, diff=diff)
+                return await provider.review(
+                    title=title, body=body, diff=diff, extra_prompt=extra_prompt
+                )
             except Exception as e:
                 last_error = e
                 log.warning("ai_review_failed", provider=provider.name, error=str(e))

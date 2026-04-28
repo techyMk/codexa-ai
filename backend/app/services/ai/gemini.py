@@ -17,8 +17,10 @@ class GeminiProvider(AIProvider):
             raise RuntimeError("GEMINI_API_KEY not set")
         self._client = genai.Client(api_key=api_key)
 
-    async def review(self, *, title: str, body: str, diff: str) -> ReviewResult:
-        prompt = build_user_prompt(title=title, body=body, diff=diff)
+    async def review(
+        self, *, title: str, body: str, diff: str, extra_prompt: str = ""
+    ) -> ReviewResult:
+        prompt = build_user_prompt(title=title, body=body, diff=diff, extra_prompt=extra_prompt)
 
         response = await asyncio.to_thread(
             self._client.models.generate_content,

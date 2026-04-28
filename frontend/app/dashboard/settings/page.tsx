@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Key, ExternalLink } from "lucide-react";
+import { Github, Key, ExternalLink, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +29,16 @@ export default async function Page() {
             <Button variant="glow">
               Manage installations <ExternalLink className="h-4 w-4" />
             </Button>
+          </Link>
+        </Card>
+
+        <Card title="Per-repository settings" icon={Sliders}>
+          <p className="text-sm text-muted-foreground mb-4">
+            Customize how Codexa reviews each repo — skip paths, severity threshold, and custom
+            guidance for the AI.
+          </p>
+          <Link href="/dashboard/settings/repos">
+            <Button variant="outline">Configure repositories</Button>
           </Link>
         </Card>
 

@@ -60,23 +60,28 @@ export default async function Page() {
         ) : (
           <ul className="divide-y divide-border/40">
             {reviews.map((r) => (
-              <li key={r.id} className="px-6 py-4 hover:bg-accent/20 transition-colors">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {r.repo} <span className="text-muted-foreground">#{r.pr_number}</span>
+              <li key={r.id}>
+                <Link
+                  href={`/dashboard/reviews/${r.id}`}
+                  className="block px-6 py-4 hover:bg-accent/20 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {r.pr_title || `PR #${r.pr_number}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {r.repo} #{r.pr_number} · {r.summary || "—"}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {r.summary || "—"}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <Pill status={r.status} />
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {r.findings_count ?? 0} findings
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <Pill status={r.status} />
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {r.findings_count ?? 0} findings
-                    </span>
-                  </div>
-                </div>
+                </Link>
               </li>
             ))}
           </ul>

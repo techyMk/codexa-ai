@@ -69,11 +69,14 @@ async def fetch_pr_diff(*, installation_id: int, repo: str, pr_number: int) -> s
         return r.text
 
 
+# ── PR review comment ──────────────────────────────────────────────────────────
+
+
 def _severity_emoji(sev: str) -> str:
     return {"error": "🔴", "warn": "🟡", "info": "🔵"}.get(sev, "🔵")
 
 
-def render_review_comment(result: ReviewResult) -> str:
+def render_review_comment(result: ReviewResult, *, app_slug: str = "codexa-bot") -> str:
     lines = [
         "## 🤖 Codexa AI Review",
         "",
@@ -92,7 +95,10 @@ def render_review_comment(result: ReviewResult) -> str:
             if f.suggestion:
                 lines.append(f"  - 💡 _Suggestion:_ {f.suggestion}")
         lines.append("")
-    lines.append(f"<sub>Reviewed by `{result.provider}` · powered by [Codexa](https://github.com/apps/codexa)</sub>")
+    lines.append(
+        f"<sub>Reviewed by `{result.provider}` · powered by "
+        f"[Codexa](https://github.com/apps/{app_slug})</sub>"
+    )
     return "\n".join(lines)
 
 
@@ -108,3 +114,106 @@ async def post_pr_comment(
         )
         r.raise_for_status()
         return r.json()
+
+
+# ── GitHub Checks API ──────────────────────────────────────────────────────────
+
+
+async def create_check_run(
+    *, installation_id: int, repo: str, head_sha: str
+) -> int | None:
+    """Create an `in_progress` check run. Returns the check run id, or None on failure."""
+    token = await _installation_token(installation_id)
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.post(
+                f"{_API}/repos/{repo}/check-runs",
+                headers={**_HEADERS_JSON, "Authorization": f"Bearer {token}"},
+                json={
+                    "name": "Codexa AI Review",
+                    "head_sha": head_sha,
+                    "status": "in_progress",
+                    "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                },
+            )
+            r.raise_for_status()
+            return int(r.json()["id"])
+    except Exception:
+        log.exception("create_check_run_failed", repo=repo)
+        return None
+
+
+async def update_check_run(
+    *,
+    installation_id: int,
+    repo: str,
+    check_run_id: int,
+    result: ReviewResult,
+) -> None:
+    """Mark the check run complete. `failure` if any error-severity findings, else `success`."""
+    token = await _installation_token(installation_id)
+
+    conclusion = "failure" if result.has_blocking_issues else "success"
+    error_count = sum(1 for f in result.findings if f.severity == "error")
+    warn_count = sum(1 for f in result.findings if f.severity == "warn")
+    info_count = sum(1 for f in result.findings if f.severity == "info")
+
+    title = (
+        f"{error_count} error{'s' if error_count != 1 else ''} · "
+        f"{warn_count} warning{'s' if warn_count != 1 else ''} · "
+        f"{info_count} info"
+    )
+
+    summary_lines = [result.summary, ""]
+    if result.findings:
+        summary_lines.append("### Findings")
+        for f in result.findings[:25]:  # GitHub limits check-run text size
+            loc = f"`{f.file}`" + (f":{f.line}" if f.line else "")
+            summary_lines.append(
+                f"- {_severity_emoji(f.severity)} **{f.severity.upper()}** {loc} — {f.message}"
+            )
+        if len(result.findings) > 25:
+            summary_lines.append(f"\n_…and {len(result.findings) - 25} more findings._")
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.patch(
+                f"{_API}/repos/{repo}/check-runs/{check_run_id}",
+                headers={**_HEADERS_JSON, "Authorization": f"Bearer {token}"},
+                json={
+                    "status": "completed",
+                    "conclusion": conclusion,
+                    "completed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "output": {
+                        "title": title,
+                        "summary": "\n".join(summary_lines)[:65000],
+                    },
+                },
+            )
+            r.raise_for_status()
+    except Exception:
+        log.exception("update_check_run_failed", repo=repo, check_run_id=check_run_id)
+
+
+async def fail_check_run(
+    *, installation_id: int, repo: str, check_run_id: int, message: str
+) -> None:
+    """Mark the check run as failed (used when the review pipeline itself errors)."""
+    token = await _installation_token(installation_id)
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            await client.patch(
+                f"{_API}/repos/{repo}/check-runs/{check_run_id}",
+                headers={**_HEADERS_JSON, "Authorization": f"Bearer {token}"},
+                json={
+                    "status": "completed",
+                    "conclusion": "neutral",
+                    "completed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "output": {
+                        "title": "Codexa review skipped",
+                        "summary": message[:65000],
+                    },
+                },
+            )
+    except Exception:
+        log.exception("fail_check_run_failed", repo=repo, check_run_id=check_run_id)

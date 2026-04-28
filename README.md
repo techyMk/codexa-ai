@@ -1,10 +1,31 @@
-# Codexa
+<div align="center">
 
-> **AI Code Review Bot for GitHub Pull Requests** — free, fast, and open source.
+<img src="frontend/assets/codex-logo.svg" alt="Codexa" width="320" />
+
+### AI code review on every GitHub pull request
+
+Catches bugs, security issues, and bad patterns before merge — without slowing your CI.
+
+[![CI](https://img.shields.io/github/actions/workflow/status/techyMk/codexa/ci.yml?branch=main&label=CI&logo=github)](.github/workflows/ci.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=nextdotjs)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3FCF8E?logo=supabase)](https://supabase.com)
+[![Vercel](https://img.shields.io/badge/Vercel-deployed-black?logo=vercel)](https://vercel.com)
+[![Render](https://img.shields.io/badge/Render-deployed-46E3B7?logo=render)](https://render.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+
+[**Live demo**](https://codexa-ai-techymk.vercel.app) · [**Install bot**](https://github.com/apps/codexa-bot/installations/new) · [**Docs**](https://codexa-ai-techymk.vercel.app/docs)
+
+</div>
+
+---
+
+# Codexa
 
 Codexa is a GitHub App that auto-reviews every pull request with AI. It catches bugs, security
 issues, and bad patterns before merge, and posts findings as a single review comment with
-file, line, severity, and concrete fix suggestions.
+file, line, severity, and concrete fix suggestions — plus a status check that can block merges
+on critical issues.
 
 - **Frontend** — Next.js 15 (App Router) + Tailwind + Framer Motion → Vercel
 - **Backend** — FastAPI + httpx + structlog → Render (Docker)

@@ -15,12 +15,19 @@ class GroqProvider(AIProvider):
             raise RuntimeError("GROQ_API_KEY not set")
         self._client = AsyncGroq(api_key=api_key)
 
-    async def review(self, *, title: str, body: str, diff: str) -> ReviewResult:
+    async def review(
+        self, *, title: str, body: str, diff: str, extra_prompt: str = ""
+    ) -> ReviewResult:
         completion = await self._client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_user_prompt(title=title, body=body, diff=diff)},
+                {
+                    "role": "user",
+                    "content": build_user_prompt(
+                        title=title, body=body, diff=diff, extra_prompt=extra_prompt
+                    ),
+                },
             ],
             response_format={"type": "json_object"},
             temperature=0.2,

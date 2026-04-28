@@ -30,12 +30,23 @@ If the diff has no real issues, return an empty findings array with a short posi
 """
 
 
-def build_user_prompt(*, title: str, body: str, diff: str) -> str:
+def build_user_prompt(
+    *, title: str, body: str, diff: str, extra_prompt: str = ""
+) -> str:
     body = (body or "").strip() or "(no description)"
     # Cap diff at ~60KB to stay safely under free-tier context limits
     if len(diff) > 60_000:
         diff = diff[:60_000] + "\n\n... [truncated for length]"
+
+    extra_section = ""
+    if extra_prompt.strip():
+        extra_section = (
+            "Repository-specific guidance (treat as a hard requirement, not a hint):\n"
+            f"{extra_prompt.strip()}\n\n"
+        )
+
     return (
+        f"{extra_section}"
         f"PR title: {title}\n\n"
         f"PR description:\n{body}\n\n"
         f"Unified diff:\n```diff\n{diff}\n```"
