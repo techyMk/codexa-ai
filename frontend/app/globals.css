@@ -108,6 +108,35 @@
   a[href] {
     cursor: pointer;
   }
+
+  /* Stronger, branded scrollbar inside the landing-page showcase */
+  .showcase-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(250 95% 70% / 0.75) transparent;
+  }
+  .showcase-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+  .showcase-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      hsl(250 95% 70% / 0.9),
+      hsl(220 95% 65% / 0.9)
+    );
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 0 0 10px hsl(250 95% 70% / 0.4);
+  }
+  .showcase-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      hsl(250 95% 75% / 1),
+      hsl(220 95% 70% / 1)
+    );
+    background-clip: padding-box;
+    box-shadow: 0 0 14px hsl(250 95% 70% / 0.6);
+  }
 }
 
 @layer utilities {

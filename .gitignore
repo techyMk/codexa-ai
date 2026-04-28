@@ -58,3 +58,6 @@ backend/github-app.pem
 .cache/
 .turbo/
 .vercel
+
+# Claude Code local config & memory
+.claude/

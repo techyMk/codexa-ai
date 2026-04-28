@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GitPullRequest,
   CheckCircle2,
   Sliders,
   Search,
+  ChevronsDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,8 @@ const TABS = [
     desc: "A single, well-formatted comment on every PR — summary, severity-tagged findings, file:line refs, and concrete fix suggestions.",
     image: "/screenshots/pr-comment.png",
     url: "github.com/your-org/repo/pull/12",
-    aspect: 1920 / 900,
+    width: 1920,
+    height: 900,
   },
   {
     id: "check",
@@ -30,7 +32,8 @@ const TABS = [
     desc: "Codexa posts a real GitHub status check. Add it to branch protection to block merges with critical issues.",
     image: "/screenshots/github-check.png",
     url: "github.com/your-org/repo/pull/12/checks",
-    aspect: 1920 / 900,
+    width: 1920,
+    height: 900,
   },
   {
     id: "settings",
@@ -39,7 +42,8 @@ const TABS = [
     desc: "Tune Codexa for each repo — skip lockfiles, set a severity threshold, and add custom guidance the AI must follow.",
     image: "/screenshots/repo-settings.png",
     url: "codexa.dev/dashboard/settings/repos/...",
-    aspect: 1906 / 1491,
+    width: 1906,
+    height: 1491,
   },
   {
     id: "detail",
@@ -48,18 +52,23 @@ const TABS = [
     desc: "Click any review to drill into the full breakdown — every finding with file, line, message, and AI-suggested fix.",
     image: "/screenshots/review-detail.png",
     url: "codexa.dev/dashboard/reviews/...",
-    aspect: 1920 / 900,
+    width: 1920,
+    height: 900,
   },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
+const FRAME_ASPECT = 1920 / 900;
+
 export function Showcase() {
   const [active, setActive] = useState<TabId>(TABS[0].id);
   const [paused, setPaused] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const current = TABS.find((t) => t.id === active)!;
+  const isScrollable = current.height / current.width > 1 / FRAME_ASPECT;
 
-  // Auto-advance carousel — pauses on hover, resets on manual click
+  // Auto-advance — pauses on hover, resets on manual click
   useEffect(() => {
     if (paused) return;
     const timer = setTimeout(() => {
@@ -70,9 +79,13 @@ export function Showcase() {
     return () => clearTimeout(timer);
   }, [active, paused]);
 
+  // Reset scroll position when tab changes
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [active]);
+
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Ambient backdrop blobs */}
       <div aria-hidden className="absolute inset-0 -z-10">
         <div className="absolute top-1/3 left-1/4 h-72 w-72 rounded-full bg-violet-500/10 blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-blue-500/10 blur-[120px]" />
@@ -116,7 +129,7 @@ export function Showcase() {
           })}
         </div>
 
-        {/* Browser chrome + image */}
+        {/* Browser chrome */}
         <div
           className="relative"
           onMouseEnter={() => setPaused(true)}
@@ -132,11 +145,7 @@ export function Showcase() {
             className="absolute -inset-4 bg-gradient-to-r from-violet-500/30 via-blue-500/30 to-violet-500/30 blur-3xl rounded-3xl opacity-50"
           />
 
-          <motion.div
-            layout
-            transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
-            className="relative rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden"
-          >
+          <div className="relative rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden">
             {/* macOS-style browser chrome */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card/80">
               <div className="flex gap-1.5">
@@ -173,34 +182,54 @@ export function Showcase() {
               />
             </div>
 
-            {/* Screenshot — frame size animates between tabs via layout */}
-            <motion.div
-              layout
-              transition={{ layout: { duration: 0.45, ease: [0.32, 0.72, 0, 1] } }}
+            {/* Fixed-aspect viewport — scrolls vertically when image is taller */}
+            <div
               className="relative bg-background/40"
-              style={{ aspectRatio: current.aspect }}
+              style={{ aspectRatio: FRAME_ASPECT }}
             >
-              <AnimatePresence mode="wait">
+              <div
+                ref={scrollRef}
+                className="absolute inset-0 overflow-y-auto showcase-scroll"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={active}
+                    initial={{ opacity: 0, scale: 1.01 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.99 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <Image
+                      src={current.image}
+                      alt={`${current.label} screenshot`}
+                      width={current.width}
+                      height={current.height}
+                      sizes="(min-width: 1280px) 1152px, 100vw"
+                      className="block w-full h-auto"
+                      priority={active === TABS[0].id}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Scroll hint — only shown for scrollable tabs, fades after a moment */}
+              {isScrollable && (
                 <motion.div
-                  key={active}
-                  initial={{ opacity: 0, scale: 1.02 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.99 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="absolute inset-0"
+                  key={`hint-${active}`}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, delay: 0.5 }}
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none"
                 >
-                  <Image
-                    src={current.image}
-                    alt={`${current.label} screenshot`}
-                    fill
-                    sizes="(min-width: 1280px) 1152px, 100vw"
-                    className="object-cover object-top"
-                    priority={active === TABS[0].id}
-                  />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-background/80 backdrop-blur border border-border/60 text-xs text-muted-foreground shadow-lg">
+                    <ChevronsDown className="h-3 w-3 animate-bounce" />
+                    Scroll for more
+                  </div>
                 </motion.div>
-              </AnimatePresence>
-            </motion.div>
-          </motion.div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Description fades between tabs */}
