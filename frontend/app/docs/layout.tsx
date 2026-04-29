@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/landing/footer";
+import { DocsSidebar } from "@/components/docs/sidebar";
+import { DocsMobileNav, type DocsNavSection } from "@/components/docs/mobile-nav";
 
-const NAV = [
+const NAV: DocsNavSection[] = [
   {
     title: "Getting started",
     items: [
@@ -35,33 +36,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="container max-w-7xl pt-32 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
-          {/* Sidebar */}
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <nav className="space-y-6 text-sm">
-              {NAV.map((section) => (
-                <div key={section.title}>
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                    {section.title}
-                  </h4>
-                  <ul className="space-y-1">
-                    {section.items.map((it) => (
-                      <li key={it.href}>
-                        <Link
-                          href={it.href}
-                          className="block px-3 py-1.5 rounded-md text-muted-foreground hover:bg-accent/30 hover:text-foreground transition-colors"
-                        >
-                          {it.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </nav>
+          {/* Desktop sticky sidebar (hidden on mobile) */}
+          <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
+            <DocsSidebar nav={NAV} />
           </aside>
 
-          {/* Content */}
-          <article className="min-w-0 space-y-6">{children}</article>
+          <article className="min-w-0 space-y-6">
+            {/* Mobile collapsible nav (hidden on desktop) */}
+            <DocsMobileNav nav={NAV} />
+            {children}
+          </article>
         </div>
       </div>
 
